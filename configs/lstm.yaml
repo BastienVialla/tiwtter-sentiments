@@ -1,0 +1,58 @@
+model_name: &modelname lstm_128
+architecture_name: &archiname Classifier
+datamodule_name: LSTMDataModule
+pl_model_name: LMModel
+
+trainer:
+  gpus: 1
+  gradient_clip_val: 0.5
+  stochastic_weight_avg: True
+  precision: 32
+  max_epoch: 100000
+  min_epoch: 5
+  check_val_every_n_epoch: 1
+
+datamodule:
+  data_dir: ./data
+  num_workers: 2
+  pin_memory: False
+  train_shuffle: True
+  batch_size: &batchsize 512
+
+callbacks:
+  early_stopping:
+    monitor: val_loss
+    min_delta: .00001
+    patience: 10
+
+  checkpoint:
+    filename: "{epoch}-{val_loss:.4f}"
+    save_top_k: 3
+    verbose: True
+    monitor: val_loss
+    mode: min
+
+  tensorboard_logging:
+    dir: tb_logs
+    name: *modelname
+
+tokenizer:
+  vocab_size: &vocabsize 2000
+  padding: 
+    enable: True
+    direction: left
+
+architecture: &archi
+  char_dp: 0.1
+  embs_dim: 128
+  hidden_dim: 128
+  embs_dp: 0.1
+  final_dp: 0.1
+  vocab_size: *vocabsize
+
+model:
+  architecture: *archi
+  architecture_name: *archiname
+  batch_size: *batchsize
+  optimizer: #AdamW
+    learning_rate: 0.0005
